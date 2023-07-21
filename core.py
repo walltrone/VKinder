@@ -1,5 +1,7 @@
 from datetime import datetime 
 
+import re
+
 import vk_api
 
 from config import acces_token
@@ -9,6 +11,7 @@ from config import acces_token
 class VkTools():
     def __init__(self, acces_token):
        self.api = vk_api.VkApi(token=acces_token)
+       self.offset = 0
 
     def get_profile_info(self, user_id):
 
@@ -19,10 +22,11 @@ class VkTools():
                             )
         user_info = {'name': info['first_name'] + ' '+ info['last_name'],
                      'id':  info['id'],
-                     'bdate': info['bdate'] if 'bdate' in info else None,
-                     'home_town': info['home_town'],
-                     'sex': info['sex'],
-                     'city': info['city']['id']
+                     'bdate': info['bdate'] if re.search(r'\d+\.\d+\.\d{4}', info['bdate']) else None,
+                     'home_town': info['home_town'] if 'home_town' in info else None,
+                     'sex': info['sex'] or None,
+                     'city': info['city']['id'],
+                     'relation': info['relation'] or None
                      }
         return user_info
     
@@ -38,7 +42,7 @@ class VkTools():
 
         users = self.api.method('users.search',
                                 {'count': 10,
-                                 'offset': 0,
+                                 'offset': self.offset,
                                  'age_from': age_from,
                                  'age_to': age_to,
                                  'sex': sex,
@@ -47,6 +51,7 @@ class VkTools():
                                  'is_closed': False
                                 }
                             )
+        self.offset += 10
         try:
             users = users['items']
         except KeyError:
